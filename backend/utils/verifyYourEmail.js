@@ -6,52 +6,53 @@ const CLIENT_ID = ENV_VARS.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = ENV_VARS.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = "https://developers.google.com/oauthplayground";
 const REFRESH_TOKEN = ENV_VARS.GOOGLE_REFRESH_TOKEN;
+
 const oAuth2Client = new google.auth.OAuth2(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  REDIRECT_URI
+    CLIENT_ID,
+    CLIENT_SECRET,
+    REDIRECT_URI
 );
 oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
 export const sendEmailAndVerifyCode = async (
-  newUser,
-  varificationCode,
-  res
+    newUser,
+    varificationCode,
+    res
 ) => {
-  try {
-    const accessToken = await oAuth2Client.getAccessToken();
-    if (!accessToken.token) {
-      throw new Error("Failed to generate access token");
-    }
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        type: "OAuth2",
-        user: "shahebali247bd@gmail.com",
-        clientId: CLIENT_ID,
-        clientSecret: CLIENT_SECRET,
-        refreshToken: REFRESH_TOKEN,
-        accessToken: accessToken,
-      },
-    });
+    try {
+        const accessToken = await oAuth2Client.getAccessToken();
+        if (!accessToken.token) {
+            throw new Error("Failed to generate access token");
+        }
+        const transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: {
+                type: "OAuth2",
+                user: "shahebali247bd@gmail.com",
+                clientId: CLIENT_ID,
+                clientSecret: CLIENT_SECRET,
+                refreshToken: REFRESH_TOKEN,
+                accessToken: accessToken,
+            },
+        });
 
-    // ইমেইল পাঠানোর জন্য তথ্য
-    const messageInfo = await transporter.sendMail({
-      from: '"Shaheb Ali" <shahebali247bd@gmail.com>',
-      to: newUser.email,
-      subject: `Hello ${newUser.username}, Verify Your Email`,
-      text: `Hello ${newUser.username},\nYour verification code is: ${randomToken}`,
-      html: `<h3>Here is your verification code:<br /></h3>
+        // ইমেইল পাঠানোর জন্য তথ্য
+        const messageInfo = await transporter.sendMail({
+            from: '"Shaheb Ali" <shahebali247bd@gmail.com>',
+            to: newUser.email,
+            subject: `Hello ${newUser.username}, Verify Your Email`,
+            text: `Hello ${newUser.username},\nYour verification code is: ${randomToken}`,
+            html: `<h3>Here is your verification code:<br /></h3>
              <h1>${varificationCode}</h1>`,
-    });
+        });
 
-    if (messageInfo.accepted.length > 0) {
-      return res.status(200).json({
-        success: true,
-        message: "Email sent! Please check your inbox.",
-      });
+        if (messageInfo.accepted.length > 0) {
+            return res.status(200).json({
+                success: true,
+                message: "Email sent! Please check your inbox.",
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
     }
-  } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
-  }
 };
