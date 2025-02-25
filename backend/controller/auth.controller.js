@@ -56,8 +56,7 @@ export const SignUp = async (req, res) => {
     //save usre to db
     await newUser.save();
 
-    const rendomCode = Math.floor(1000 + Math.random() * 9000);
-    sendEmailAndVerifyCode(newUser, res, rendomCode);
+    sendEmailAndVerifyCode(newUser, res);
 
     //then send response with new user and delete password
     res.status(201).json({
