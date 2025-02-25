@@ -2,6 +2,7 @@ import { sendEmailAndVerifyCode } from "../utils/verifyYourEmail.js";
 import User from "./../models/auth.model.js";
 import { generateTokenAndSetCookie } from "./../utils/jwtGenerator.js";
 import bcrypt from "bcryptjs";
+import { generateVerificationCode } from "./../utils/generateCode.js";
 
 export const SignUp = async (req, res) => {
   const { email, password, username, profile } = req.body;
@@ -27,8 +28,8 @@ export const SignUp = async (req, res) => {
 
     // const verifyCode = Math.floor(1000 + Math.random() * 9000);
     const user = await User.findOne({ email });
-    const username = await User.findOne({ username });
-    if (user || username) {
+    // const username = await User.findOne({ username });
+    if (user) {
       return res
         .status(404)
         .json({ success: false, message: "User already exists" });
@@ -51,12 +52,19 @@ export const SignUp = async (req, res) => {
     });
 
     //generate token and set cookie
-    generateTokenAndSetCookie(newUser._id, res);
+    const duration15Days = 15 * 24 * 60 * 60 * 1000;
+    generateTokenAndSetCookie("JWT_TOKEN", newUser._id, res, duration15Days);
 
     //save usre to db
     await newUser.save();
 
-    sendEmailAndVerifyCode(newUser, res);
+    //Varification
+    const varificationCode = generateVerificationCode();
+    //generate token and set cookie
+    const duration2Min = 2 * 60 * 1000;
+    generateTokenAndSetCookie("CODE_TOKEN", newUser._id, res, duration2Min);
+
+    // sendEmailAndVerifyCode(newUser, varificationCode, res);
 
     //then send response with new user and delete password
     res.status(201).json({

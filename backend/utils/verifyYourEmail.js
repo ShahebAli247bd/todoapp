@@ -1,7 +1,6 @@
 import nodemailer from "nodemailer";
 import { ENV_VARS } from "./../config/envVars.js";
 import { google } from "googleapis"; // Add this line
-import { generateVerificationCode } from "./generateCode.js";
 
 const CLIENT_ID = ENV_VARS.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = ENV_VARS.GOOGLE_CLIENT_SECRET;
@@ -14,7 +13,11 @@ const oAuth2Client = new google.auth.OAuth2(
 );
 oAuth2Client.setCredentials({ refresh_token: REFRESH_TOKEN });
 
-export const sendEmailAndVerifyCode = async (newUser, res, randomToken) => {
+export const sendEmailAndVerifyCode = async (
+  newUser,
+  varificationCode,
+  res
+) => {
   try {
     const accessToken = await oAuth2Client.getAccessToken();
     if (!accessToken.token) {
@@ -39,7 +42,7 @@ export const sendEmailAndVerifyCode = async (newUser, res, randomToken) => {
       subject: `Hello ${newUser.username}, Verify Your Email`,
       text: `Hello ${newUser.username},\nYour verification code is: ${randomToken}`,
       html: `<h3>Here is your verification code:<br /></h3>
-             <h1>${generateVerificationCode()}</h1>`,
+             <h1>${varificationCode}</h1>`,
     });
 
     if (messageInfo.accepted.length > 0) {
