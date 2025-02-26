@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import User from "./../models/auth.model.js";
 import { sendEmailAndVerifyCode } from "../utils/verifyYourEmail.js";
 import { generateTokenAndSetCookie } from "./../utils/jwtGenerator.js";
@@ -122,15 +123,49 @@ export const SignIn = async (req, res) => {
                 .status(404)
                 .json({ success: false, message: "Invalid Credential" });
         }
-        //if user found then send mail to locing
+        console.log(req.cookies[ENV_VARS.JWT_AUTH_TOKEN_NAME]);
+        const token = req.cookies[ENV_VARS.JWT_AUTH_TOKEN_NAME];
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized Access, No Token Provided",
+            });
+        }
+        const verify = jwt.verify(token, ENV_VARS.JWT_SECRET_KEY);
+        if (!verify) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorize Access, Invalid Token",
+            });
+        }
         // sendEmailAndVerifyCode(newUser, varificationCode, res);
 
-        //get jwt token its not working... need to fix
-        // const token = req.cookies["JWT_AUTH_TOKEN"];
+        res.status(200).json({ success: true, message: "Login Successfull" });
+        //if user found then send mail to locing
 
         console.log(token);
     } catch (error) {
         console.log("Error:" + error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const SignOut = async (req, res) => {
+    try {
+        res.clearCookie(ENV_VARS.JWT_AUTH_TOKEN_NAME);
+        res.clearCookie(ENV_VARS.VERIFY_CODE_TOKEN_NAME);
+        res.status(200).json({
+            success: false,
+            message: "Successfully signout ",
+        });
+    } catch (error) {
+        if (error.status == 404) {
+            return res.status(404).json({
+                success: false,
+                message: "You are not authorize found",
+            });
+        }
+
         res.status(500).json({ success: false, message: error.message });
     }
 };
