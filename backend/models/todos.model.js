@@ -4,7 +4,6 @@ const todosSchema = mongoose.Schema(
     {
         userId: {
             type: mongoose.Schema.Types.ObjectId,
-            unique: true,
             required: true,
             ref: "User",
         },
@@ -15,7 +14,7 @@ const todosSchema = mongoose.Schema(
         },
         completed: {
             type: Boolean,
-            required: true,
+            default: false,
         },
     },
     {

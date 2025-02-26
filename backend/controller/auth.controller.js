@@ -12,7 +12,7 @@ import { ENV_VARS } from "../config/envVars.js";
 import OTP from "./../models/otp.model.js";
 
 /**
- * Handle User Registration with Checking Input and save data
+ * Handle User Registration with Checking Input and save data, add jwt_auth_token
  * @param {Object} req
  * @param {Object} res
  * @returns object with success or error message
@@ -80,20 +80,20 @@ export const SignUp = async (req, res) => {
         await newUser.save();
 
         //Varification
-        const varificationCode = generateVerificationCode();
+        // const varificationOTPCode = generateVerificationCode();
 
         //generate token and set cookie
-        generateTokenAndSetCookie(
-            ENV_VARS.VERIFY_CODE_TOKEN,
-            newUser._id,
-            ENV_VARS.DURATION_2MIN,
-            res
-        );
+        // generateTokenAndSetCookie(
+        //     ENV_VARS.VERIFY_CODE_TOKEN,
+        //     newUser._id,
+        //     ENV_VARS.DURATION_2MIN,
+        //     res
+        // );
 
         /**
          * Sending Email is Pending
          */
-        // sendEmailAndVerifyCode(newUser, varificationCode, res);
+        // sendEmailAndVerifyCode(newUser.email, varificationOTPCode, res);
 
         //then send response with new user and delete password
         res.status(201).json({
@@ -112,6 +112,13 @@ export const SignUp = async (req, res) => {
     }
 };
 
+/**
+ * Handle User Login with Checking Input, compare password, create otp save in db, send otp to mail and add jwt_auth_token
+ * @param {Object} req
+ * @param {Object} res
+ * @returns object with success or error message
+ * @throws {Error} internal server error 500
+ */
 export const SignIn = async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -182,10 +189,17 @@ export const SignIn = async (req, res) => {
     }
 };
 
+/**
+ * Handle User signout clear cookie
+ * @param {Object} req
+ * @param {Object} res
+ * @returns object with success or error message
+ * @throws {Error} internal server error 500
+ */
 export const SignOut = async (req, res) => {
     try {
         res.clearCookie(ENV_VARS.JWT_AUTH_TOKEN);
-        res.clearCookie(ENV_VARS.VERIFY_CODE_TOKEN);
+
         res.status(200).json({
             success: false,
             message: "Successfully signout",
@@ -194,7 +208,7 @@ export const SignOut = async (req, res) => {
         if (error.status == 404) {
             return res.status(404).json({
                 success: false,
-                message: "You are not authorize found",
+                message: "You are not authorized user",
             });
         }
 
@@ -202,6 +216,13 @@ export const SignOut = async (req, res) => {
     }
 };
 
+/**
+ * Handle User VerifyOTPCode, checking input, decoded token get userId and get OTP to verify userOTP input
+ * @param {Object} req
+ * @param {Object} res
+ * @returns object with success or error message
+ * @throws {Error} internal server error 500
+ */
 export const verifyOTPCode = async (req, res) => {
     try {
         const { userOTP } = req.body;

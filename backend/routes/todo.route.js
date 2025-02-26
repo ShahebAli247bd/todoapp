@@ -1,9 +1,16 @@
 import express from "express";
+import {
+    addTodo,
+    getTodoByTodoId,
+    getAllTodosByUserId,
+    deleteTodoByTodoId,
+} from "../controller/todos.controller.js";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-    res.send("<h1>TODOS</h1>");
-});
+router.post("/", addTodo);
+router.get("/all", getAllTodosByUserId);
+router.get("/:todoId", getTodoByTodoId);
+router.delete("/:todoId", deleteTodoByTodoId);
 
 export default router;

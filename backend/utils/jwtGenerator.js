@@ -1,14 +1,16 @@
 import jwt from "jsonwebtoken";
 import { ENV_VARS } from "../config/envVars.js";
 
-export const generateTokenAndSetCookie = (name, userId, duration, res) => {
+export const generateTokenAndSetCookie = (tokenName, userId, duration, res) => {
     try {
+        res.clearCookie(tokenName);
+
         const token = jwt.sign({ userId }, ENV_VARS.JWT_SECRET_KEY, {
             expiresIn: duration, //15days
         });
 
         if (token) {
-            res.cookie(name, token, {
+            res.cookie(tokenName, token, {
                 expires: duration,
                 maxAge: duration,
                 httpOnly: true,
