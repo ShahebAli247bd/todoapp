@@ -1,12 +1,14 @@
 import express from "express";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
+import { ProtectedRoute } from "./middleware/ProtectedRoute.js";
 import AuthRouter from "./routes/auth.route.js";
+import TodosRouter from "./routes/todo.route.js";
 
 //initialize express app
 const app = express();
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.json());
 
 //Backedn home route
 app.get("/", (req, res) => {
@@ -16,6 +18,9 @@ app.get("/", (req, res) => {
 //route for Auth
 
 app.use("/api/v1/auth", AuthRouter);
+app.use("/api/v1/todos", ProtectedRoute, TodosRouter);
+
+//ProtectedRoute
 
 //Server Listening
 app.listen(5000, () => {

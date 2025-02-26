@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { ENV_VARS } from "../config/envVars.js";
+
 export const generateTokenAndSetCookie = (name, userId, duration, res) => {
     try {
         const token = jwt.sign({ userId }, ENV_VARS.JWT_SECRET_KEY, {
@@ -12,7 +13,7 @@ export const generateTokenAndSetCookie = (name, userId, duration, res) => {
                 maxAge: duration,
                 httpOnly: true,
                 sameSite: "strict",
-                secure: true,
+                secure: ENV_VARS.NODE_ENV === "production",
             });
         }
     } catch (error) {

@@ -1,11 +1,23 @@
 import jwt from "jsonwebtoken";
 import User from "./../models/auth.model.js";
+import { LocalStorage } from "node-localstorage";
+const localStorage = new LocalStorage("./scratch"); // Creates a storage directory
+
 import { sendEmailAndVerifyCode } from "../utils/verifyYourEmail.js";
 import { generateTokenAndSetCookie } from "./../utils/jwtGenerator.js";
 import { generateVerificationCode } from "./../utils/generateCode.js";
 import bcrypt from "bcryptjs";
-import { ENV_VARS } from "../config/envVars.js";
 
+import { ENV_VARS } from "../config/envVars.js";
+import OTP from "./../models/otp.model.js";
+
+/**
+ * Handle User Registration with Checking Input and save data
+ * @param {Object} req
+ * @param {Object} res
+ * @returns object with success or error message
+ * @throws {Error} internal server error 500
+ */
 export const SignUp = async (req, res) => {
     const { email, password, username, profile } = req.body;
 
@@ -58,7 +70,7 @@ export const SignUp = async (req, res) => {
 
         //generate token and set cookie
         generateTokenAndSetCookie(
-            ENV_VARS.JWT_AUTH_TOKEN_NAME,
+            ENV_VARS.JWT_AUTH_TOKEN,
             newUser._id,
             ENV_VARS.DURATION_15DAYS,
             res
@@ -72,7 +84,7 @@ export const SignUp = async (req, res) => {
 
         //generate token and set cookie
         generateTokenAndSetCookie(
-            ENV_VARS.VERIFY_CODE_TOKEN_NAME,
+            ENV_VARS.VERIFY_CODE_TOKEN,
             newUser._id,
             ENV_VARS.DURATION_2MIN,
             res
@@ -108,6 +120,12 @@ export const SignIn = async (req, res) => {
                 .status(404)
                 .json({ success: false, message: "All fields are required" });
         }
+        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!regex.test(email)) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Invalid Email" });
+        }
         if (password.length < 6) {
             return res.status(401).json({
                 success: false,
@@ -116,34 +134,48 @@ export const SignIn = async (req, res) => {
         }
 
         const user = await User.findOne({ email });
-        const compairPassword = await bcrypt.compare(password, user.password);
 
-        if (!user || !compairPassword) {
+        if (!user) {
             return res
                 .status(404)
                 .json({ success: false, message: "Invalid Credential" });
         }
-        console.log(req.cookies[ENV_VARS.JWT_AUTH_TOKEN_NAME]);
-        const token = req.cookies[ENV_VARS.JWT_AUTH_TOKEN_NAME];
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorized Access, No Token Provided",
-            });
-        }
-        const verify = jwt.verify(token, ENV_VARS.JWT_SECRET_KEY);
-        if (!verify) {
-            return res.status(401).json({
-                success: false,
-                message: "Unauthorize Access, Invalid Token",
-            });
-        }
-        // sendEmailAndVerifyCode(newUser, varificationCode, res);
 
-        res.status(200).json({ success: true, message: "Login Successfull" });
+        const comparePassword = await bcrypt.compare(password, user.password);
+
+        if (!comparePassword) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Invalid Password" });
+        }
+
+        generateTokenAndSetCookie(
+            ENV_VARS.JWT_AUTH_TOKEN,
+            user._id,
+            ENV_VARS.DURATION_15DAYS,
+            res
+        );
+
+        //Verification Token, (Not needed right now)
+        const otpCode = generateVerificationCode();
+
+        const newOtp = await OTP.create({ userId: user._id, otpCode });
+
+        if (newOtp) {
+            //It will send mail after login successfull to verify using code
+            await sendEmailAndVerifyCode(user.email, newOtp.otpCode, res);
+        }
+
+        res.status(200).json({
+            success: true,
+            user: {
+                ...user._doc,
+                password: "",
+                message: "Login successfull",
+            },
+        });
+
         //if user found then send mail to locing
-
-        console.log(token);
     } catch (error) {
         console.log("Error:" + error.message);
         res.status(500).json({ success: false, message: error.message });
@@ -152,11 +184,11 @@ export const SignIn = async (req, res) => {
 
 export const SignOut = async (req, res) => {
     try {
-        res.clearCookie(ENV_VARS.JWT_AUTH_TOKEN_NAME);
-        res.clearCookie(ENV_VARS.VERIFY_CODE_TOKEN_NAME);
+        res.clearCookie(ENV_VARS.JWT_AUTH_TOKEN);
+        res.clearCookie(ENV_VARS.VERIFY_CODE_TOKEN);
         res.status(200).json({
             success: false,
-            message: "Successfully signout ",
+            message: "Successfully signout",
         });
     } catch (error) {
         if (error.status == 404) {
@@ -166,6 +198,50 @@ export const SignOut = async (req, res) => {
             });
         }
 
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const verifyOTPCode = async (req, res) => {
+    try {
+        const { userOTP } = req.body;
+
+        if (!userOTP) {
+            return res
+                .status(404)
+                .json({ success: false, message: "Please enter OTP" });
+        }
+
+        //get token
+        const token = req.cookies[ENV_VARS.JWT_AUTH_TOKEN];
+        //decode token and get userId stored in token
+        const decoded = jwt.verify(token, ENV_VARS.JWT_SECRET_KEY);
+
+        //get OTP from database
+        const getStoredOtp = await OTP.findOne({ userId: decoded.userId });
+
+        if (!getStoredOtp) {
+            return res.status(404).json({
+                success: false,
+                message: "OTP expired, Please login again",
+            });
+        }
+
+        if (userOTP != getStoredOtp.otpCode) {
+            return res
+                .status(401)
+                .json({ success: false, message: "Invalid OTP" });
+        }
+
+        if (getStoredOtp && Date.now() > getStoredOtp.expireAt) {
+            res.status(200).json({
+                success: false,
+                message: "OTP expired, please login again!",
+            });
+        }
+
+        res.status(200).json({ success: true, message: "OTP Verified" });
+    } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
