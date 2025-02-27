@@ -11,6 +11,7 @@ export const useAuthStore = create(
         redirectAfterSignUp: false,
         isSigningIn: false,
         isOtpModalOpen: false, // Open OTP Modal
+        isOtpVerified: false,
 
         signup: async (signupData) => {
             set({ isSigningUp: true });
@@ -61,6 +62,35 @@ export const useAuthStore = create(
                 }));
                 console.log(error.response.data.message);
                 toast.error(error.response.data.message);
+            }
+        },
+        verifyOTP: async (otp) => {
+            set({ isOtpVerified: true });
+            try {
+                const response = await axios.post(
+                    import.meta.env.VITE_HOST + "/api/v1/auth/verifyotp",
+                    { userOTP: otp }
+                );
+                set((state) => ({
+                    ...state,
+                    user: response.data.user,
+                    isOtpVerified: false,
+                    isOtpModalOpen: true, // Open OTP Modal
+                }));
+                toast.success(response.data.user.message);
+            } catch (error) {
+                set((state) => ({
+                    ...state,
+                    user: null,
+                    isOtpVerified: false,
+                    isOtpModalOpen: false, // Open OTP Modal
+                }));
+                console.log(
+                    error.response.data.message || "Can't Verified OTP"
+                );
+                toast.error(
+                    error.response.data.message || "Can't Verified OTP"
+                );
             }
         },
     }))

@@ -171,7 +171,7 @@ export const SignIn = async (req, res) => {
 
         if (newOtp) {
             //It will send mail after login successfull to verify using code
-            // await sendEmailAndVerifyCode(user.email, newOtp.otpCode, res);
+            await sendEmailAndVerifyCode(user.email, newOtp.otpCode, res);
         }
 
         res.status(200).json({
@@ -227,7 +227,7 @@ export const SignOut = async (req, res) => {
 export const verifyOTPCode = async (req, res) => {
     try {
         const { userOTP } = req.body;
-
+        console.log(userOTP);
         if (!userOTP) {
             return res
                 .status(404)
