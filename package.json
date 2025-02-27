@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon backend/server.js",
+    "frontend": "cd frontend && npm run dev",
+    "backend": "nodemon backend/server.js",
+    "both": "concurrently \"npm run backend\" \"npm run frontend\"",
     "start": "node backend/server.js"
   },
   "keywords": [
@@ -14,11 +17,13 @@
   "license": "ISC",
   "description": "Online Coding Test with TODO APP",
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "nodemon": "^3.1.9"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "google-auth-library": "^9.15.1",

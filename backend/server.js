@@ -4,12 +4,20 @@ import { connectDB } from "./config/db.js";
 import { ProtectedRoute } from "./middleware/ProtectedRoute.js";
 import AuthRouter from "./routes/auth.route.js";
 import TodosRouter from "./routes/todo.route.js";
+import cors from "cors";
 
 //initialize express app
 const app = express();
 app.use(cookieParser());
-app.use(express.json());
 
+app.use(
+    cors({
+        origin: "http://localhost:5173",
+        methods: "GET,POST,PATCH,DELETE,PUT",
+        allowedHeaders: "Content-Type,Authorization",
+    })
+);
+app.use(express.json());
 //Backedn home route
 app.get("/", (req, res) => {
     res.send("<h1>Backend is live</h1>");

@@ -32,10 +32,9 @@ export const SignUp = async (req, res) => {
 
         if (!regex.test(email)) {
             return res
-                .status(400)
+                .status(401)
                 .json({ success: false, message: "Invalid Email" });
         }
-
         if (password.length < 6) {
             return res.status(400).json({
                 success: false,
@@ -48,7 +47,7 @@ export const SignUp = async (req, res) => {
         // const username = await User.findOne({ username });
         if (user) {
             return res
-                .status(404)
+                .status(409)
                 .json({ success: false, message: "User already exists" });
         }
 
@@ -98,17 +97,18 @@ export const SignUp = async (req, res) => {
         //then send response with new user and delete password
         res.status(201).json({
             success: true,
-            data: {
+            user: {
                 ...newUser._doc,
                 password: "",
-                message: "Registration completed successfully!",
             },
+            message: "Signup completed successfully!",
         });
     } catch (error) {
         res.status(500).json({
             success: false,
             message: error.message,
         });
+        console.log("i am error");
     }
 };
 
@@ -153,7 +153,7 @@ export const SignIn = async (req, res) => {
         if (!comparePassword) {
             return res
                 .status(404)
-                .json({ success: false, message: "Invalid Password" });
+                .json({ success: false, message: "Invalid credential" });
         }
 
         generateTokenAndSetCookie(
@@ -171,7 +171,7 @@ export const SignIn = async (req, res) => {
 
         if (newOtp) {
             //It will send mail after login successfull to verify using code
-            await sendEmailAndVerifyCode(user.email, newOtp.otpCode, res);
+            // await sendEmailAndVerifyCode(user.email, newOtp.otpCode, res);
         }
 
         res.status(200).json({
