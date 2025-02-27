@@ -166,6 +166,7 @@ export const SignIn = async (req, res) => {
         //Verification Token, (Not needed right now)
         const otpCode = generateVerificationCode();
 
+        //OTP saved in OTP DB and after 2 min it will invalied and deleted automatically by index ttl (time-to-life) process
         const newOtp = await OTP.create({ userId: user._id, otpCode });
 
         if (newOtp) {
@@ -178,7 +179,7 @@ export const SignIn = async (req, res) => {
             user: {
                 ...user._doc,
                 password: "",
-                message: "Login successfull",
+                message: "Login successfull, Verify OTP Now",
             },
         });
 
@@ -244,7 +245,7 @@ export const verifyOTPCode = async (req, res) => {
         if (!getStoredOtp) {
             return res.status(404).json({
                 success: false,
-                message: "OTP expired, Please login again",
+                message: "Invalid OTP, Please login again",
             });
         }
 

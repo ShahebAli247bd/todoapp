@@ -157,3 +157,49 @@ export const deleteTodoByTodoId = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+export const editTodo = async (req, res) => {
+    try {
+        const token = req.cookies[ENV_VARS.JWT_AUTH_TOKEN];
+        const decoded = jwt.verify(token, ENV_VARS.JWT_SECRET_KEY);
+
+        const { todoId } = req.params;
+        const { title, completed } = req.body;
+        if (!title || !completed) {
+            return res.status(404).json({
+                success: false,
+                message: "All fields are required like (title, completed)",
+            });
+        }
+        const checkUserUpdatesOwnTodo = await Todos.findOne({
+            userId: decoded.userId,
+        });
+        if (!checkUserUpdatesOwnTodo) {
+            return res.status(401).json({
+                success: false,
+                message: "You are trying to unauthorize access",
+            });
+        }
+        const updatedTodo = await Todos.findByIdAndUpdate(
+            checkUserUpdatesOwnTodo._id,
+            {
+                title,
+                completed,
+            },
+            { new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            todo: {
+                ...updatedTodo._doc,
+                message: "Todo updated",
+            },
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
