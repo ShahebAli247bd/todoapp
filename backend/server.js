@@ -15,6 +15,7 @@ app.use(
         origin: "http://localhost:5173",
         methods: "GET,POST,PATCH,DELETE,PUT",
         allowedHeaders: "Content-Type,Authorization",
+        credentials: true, // Allow sending cookies
     })
 );
 app.use(express.json());

@@ -171,7 +171,9 @@ export const SignIn = async (req, res) => {
 
         if (newOtp) {
             //It will send mail after login successfull to verify using code
-            await sendEmailAndVerifyCode(user.email, newOtp.otpCode, res);
+            const getOtp = await OTP.findOne({ userId: newOtp.userId });
+            console.log(getOtp.otpCode, "otpCode From Database");
+            await sendEmailAndVerifyCode(user.email, getOtp.otpCode, res);
         }
 
         res.status(200).json({
@@ -227,7 +229,7 @@ export const SignOut = async (req, res) => {
 export const verifyOTPCode = async (req, res) => {
     try {
         const { userOTP } = req.body;
-        console.log(userOTP);
+        // console.log(userOTP, "i am here user OTP");
         if (!userOTP) {
             return res
                 .status(404)
@@ -238,17 +240,17 @@ export const verifyOTPCode = async (req, res) => {
         const token = req.cookies[ENV_VARS.JWT_AUTH_TOKEN];
         //decode token and get userId stored in token
         const decoded = jwt.verify(token, ENV_VARS.JWT_SECRET_KEY);
-
+        // console.log("token:" + token, "userId:" + decoded.userId);
         //get OTP from database
         const getStoredOtp = await OTP.findOne({ userId: decoded.userId });
-
+        // console.log(getStoredOtp, getStoredOtp.otpCode);
         if (!getStoredOtp) {
             return res.status(404).json({
                 success: false,
                 message: "Invalid OTP, Please login again",
             });
         }
-
+        console.log(userOTP, getStoredOtp.otpCode);
         if (userOTP != getStoredOtp.otpCode) {
             return res
                 .status(401)
@@ -256,7 +258,7 @@ export const verifyOTPCode = async (req, res) => {
         }
 
         if (getStoredOtp && Date.now() > getStoredOtp.expireAt) {
-            res.status(200).json({
+            return res.status(401).json({
                 success: false,
                 message: "OTP expired, please login again!",
             });
@@ -264,6 +266,15 @@ export const verifyOTPCode = async (req, res) => {
 
         res.status(200).json({ success: true, message: "OTP Verified" });
     } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const authCheck = async (req, res) => {
+    try {
+        res.status(200).json({ success: true, user: req.user });
+    } catch (error) {
+        console.log("Error: in authCheck");
         res.status(500).json({ success: false, message: error.message });
     }
 };
