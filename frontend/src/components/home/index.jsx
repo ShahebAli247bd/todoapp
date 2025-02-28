@@ -1,20 +1,13 @@
+import { useAuthStore } from "../../../store/authStore";
 import AuthPage from "../auth/auth";
+import Dashboard from "../dashboard/dashboard";
 
 import HomePage from "./Home";
 
 const IndexPage = () => {
-    const user = false;
-    return (
-        <>
-            {user ? (
-                <div>
-                    <AuthPage />
-                </div>
-            ) : (
-                <HomePage />
-            )}
-        </>
-    );
+  const { user } = useAuthStore();
+
+  return <>{user ? <Dashboard /> : <AuthPage />}</>;
 };
 
 export default IndexPage;
